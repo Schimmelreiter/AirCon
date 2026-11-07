@@ -71,6 +71,9 @@ class Economy(enum.Enum):
   OFF = 0
   ON = 1
 
+class Powerful(enum.Enum):
+  OFF = 0
+  ON = 1
 
 class EightHeat(enum.Enum):
   OFF = 0
@@ -125,17 +128,28 @@ class FglOperationMode(enum.IntEnum):
   AUTO = 2
   COOL = 3
   DRY = 4
-  FAN = 5
+  FAN_ONLY = 5
   HEAT = 6
 
 
 class FglFanSpeed(enum.IntEnum):
-  QUIET = 0
+  DIFFUSE = 0
   LOW = 1
   MEDIUM = 2
   HIGH = 3
   AUTO = 4
 
+class OutdoorLN(enum.Enum):
+  OFF = 0
+  ON = 1
+
+class Getprop(enum.Enum):
+  OFF = 0
+  ON = 1
+
+class Refresh(enum.Enum):
+  OFF = 0
+  ON = 1
 
 class Properties(object):
 
@@ -148,11 +162,36 @@ class Properties(object):
     return cls.__dataclass_fields__[attr].type
 
   @classmethod
+  def parse_attr(cls, attr, value):
+    """If a field supplies a parser function in its metadata, use it to parse its value from the raw data."""
+    # Retrieve the desired type from the class attribute type hinting
+    native_type = cls.__dataclass_fields__[attr].type
+    value_fmt = native_type(value)
+
+    # Detect parser for this attribute
+    parser = cls.__dataclass_fields__[attr].metadata.get('parser')
+    if parser:
+      value_fmt = parser(value)
+
+    return value_fmt
+  
+  @classmethod
   def get_base_type(cls, attr: str):
     return cls._get_metadata(attr)['base_type']
 
   @classmethod
-  def get_precision(cls, attr: str):
+  def get_scale(cls, attr: str) -> float:
+    """Scale affects int values; they will be divided by the scale to get a result that's
+    sent to the device, or multiplied when updating from the device. A typical value is 0.1
+    """
+    return cls._get_metadata(attr).get('scale', 1)
+
+  @classmethod
+  def get_precision(cls, attr: str) -> float:
+    """Precision affects int values. Any incoming float value v will be rounded to the nearest
+    precision g by round(v/g) * g. A typical value is 0.5. Combined with a scale of 0.1, this
+    can convert an incoming value of 20.1 to 200, or 20.4 to 205.
+    """
     return cls._get_metadata(attr).get('precision', 1)
 
   @classmethod
@@ -286,7 +325,7 @@ class AcProperties(Properties):
       'base_type': 'integer',
       'read_only': False
   })  # CurrentTemperature
-  t_temptype: TemperatureUnit = field(default=TemperatureUnit.FAHRENHEIT,
+  t_temptype: TemperatureUnit = field(default=TemperatureUnit.CELSIUS,
                                       metadata={
                                           'base_type': 'boolean',
                                           'read_only': False,
@@ -403,15 +442,24 @@ class FglProperties(Properties):
   adjust_temperature: int = field(default=25,
                                   metadata={
                                       'base_type': 'integer',
-                                      'precision': 0.1,
+                                      'scale': 0.1,
+                                      'precision': 0.5,
                                       'read_only': False
                                   })
-  display_temperature: int = field(default=25,
-                                   metadata={
+  display_temperature: float = field(default=25,
+                                  metadata={
                                       'base_type': 'integer',
-                                      'precision': 0.1,
-                                      'read_only': True
-                                   })
+                                      'scale': 0.1,
+                                      'read_only': True,
+                                      'parser': lambda x: round((x-5000)/50)/2
+                                  })
+  outdoor_temperature: float = field(default=25,
+                                  metadata={
+                                      'base_type': 'integer',
+                                      'scale': 0.1,
+                                      'read_only': True,
+                                      'parser': lambda x: round((x-5000)/50)/2
+                                  })
   af_vertical_direction: int = field(default=3,
                                      metadata={
                                          'base_type': 'integer',
@@ -449,7 +497,51 @@ class FglProperties(Properties):
                                         'decoder': lambda x: Economy[x]
                                     }
                                 })
-
+  powerful_mode: Powerful = field(default=Powerful.OFF,
+                                metadata={
+                                    'base_type': 'boolean',
+                                    'read_only': False,
+                                    'dataclasses_json': {
+                                        'encoder': lambda x: x.name,
+                                        'decoder': lambda x: Powerful[x]
+                                    }
+                                })
+  outdoor_low_noise: OutdoorLN = field(default=OutdoorLN.OFF,
+                                metadata={
+                                    'base_type': 'boolean',
+                                    'read_only': False,
+                                    'dataclasses_json': {
+                                        'encoder': lambda x: x.name,
+                                        'decoder': lambda x: OutdoorLN[x]
+                                    }
+                                })
+  get_prop: Getprop = field(default=Getprop.OFF,
+                                metadata={
+                                    'base_type': 'boolean',
+                                    'read_only': False,
+                                    'dataclasses_json': {
+                                        'encoder': lambda x: x.name,
+                                        'decoder': lambda x: Getprop[x]
+                                    }
+                                })
+  get_prop2: Getprop = field(default=Getprop.OFF,
+                                metadata={
+                                    'base_type': 'boolean',
+                                    'read_only': False,
+                                    'dataclasses_json': {
+                                        'encoder': lambda x: x.name,
+                                        'decoder': lambda x: Getprop[x]
+                                    }
+                                })
+  refresh: Refresh = field(default=Refresh.OFF,
+                                metadata={
+                                    'base_type': 'boolean',
+                                    'read_only': False,
+                                    'dataclasses_json': {
+                                        'encoder': lambda x: x.name,
+                                        'decoder': lambda x: Refresh[x]
+                                    }
+                                })
 
 @dataclass_json
 @dataclass
@@ -475,15 +567,16 @@ class FglBProperties(Properties):
   adjust_temperature: int = field(default=25,
                                   metadata={
                                       'base_type': 'integer',
-                                      'precision': 0.1,
+                                      'scale': 0.1,
                                       'read_only': False
                                   })
-  display_temperature: int = field(default=25,
-                                   metadata={
-                                      'base_type': 'integer',
-                                      'precision': 0.1,
-                                      'read_only': True
-                                   })
+  display_temperature: float = field(default=25,
+                                  metadata={
+                                      'base_type': 'float',
+                                      'scale': 0.1,
+                                      'read_only': True,
+                                      'parser': lambda x: round((x-5000)/50)/2
+                                  })
   af_vertical_move_step1: int = field(default=3,
                                       metadata={
                                           'base_type': 'integer',

@@ -2,6 +2,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field, fields
 import enum
 import logging
+import numbers
 import random
 import re
 import string
@@ -51,6 +52,8 @@ class Device(object):
     self.topics = {}
     self.work_modes = []
     self.fan_modes = []
+    self.vertical_level = []
+    # self.preset_mode = []
 
     self._next_command_id = 0
 
@@ -111,23 +114,35 @@ class Device(object):
   def get_property_type(self, name: str):
     return self._properties.get_type(name)
 
+  def get_temp_precision(self) -> float:
+    """This must be 1.0, 0.5, or 0.1 for HA MQTT precision"""
+    return float(self._properties.get_precision(self.topics['temp']))
+
+  def parse_property(self, name: str, value):
+    return self._properties.parse_attr(name, value)
+
   def update_property(self, name: str, value, notify_value=None) -> None:
     """Update the stored properties, if changed."""
     # Update value precision for value sent from the A/C
-    precision = self._properties.get_precision(name)
-    if precision != 1:
-      value = round(value * precision)
+    data_type = self._properties.get_type(name)
+    if data_type is int:
+      scale = self._properties.get_scale(name)
+      precision = self._properties.get_precision(name)
+      # Scale by scale, then round to precision
+      value = round(value * scale / precision) * precision
 
     if notify_value is None:
       notify_value = value
 
     with self._properties_lock:
       old_value = getattr(self._properties, name)
+      logging.debug(f"Updating {self}.{name} to {value}")
       if value != old_value:
         setattr(self._properties, name, value)
         # logging.debug('Updated properties: %s' % self._properties)
         if name == 't_control_value':
           self._update_controlled_properties(value)
+      logging.debug(f"Updated  {self}.{name} to {getattr(self._properties, name)}")
       self._notify_listeners(name, notify_value)
 
   def _update_controlled_properties(self, control: int):
@@ -157,10 +172,19 @@ class Device(object):
     # Device mode is set using t_control_value
     if issubclass(data_type, enum.Enum):
       data_value = data_type[value]
-    elif data_type is int and type(value) is str and '.' in value:
-      # Round rather than fail if the input is a float.
-      # This is commonly the case for temperatures converted by HA from Celsius.
-      data_value = round(float(value))
+    elif data_type is int:
+      # incoming data may be an int or float; it's like to be a float for
+      # temperature converted by HA to/from Celsius
+      float_val = float(value)
+
+      # Precision may be 0.5, in which case we round to the nearest 0.5, then apply scale
+      precision = self._properties.get_precision(name)
+      scale = self._properties.get_scale(name)
+      float_val = (round(float_val / precision) * precision) / scale
+
+      # Update value scale for value to be sent to the A/C
+      # We assume that only int types have a scale value
+      data_value = round(float_val)
     else:
       data_value = data_type(value)
 
@@ -173,11 +197,6 @@ class Device(object):
     if issubclass(data_type, enum.Enum):
       data_value = data_value.value
       typed_value = data_type[value]
-
-    # Update value precision for value to be sent to the A/C
-    precision = self._properties.get_precision(name)
-    if precision != 1:
-      data_value = round(data_value / precision)
 
     command = self._build_command(name, data_value)
     # There are (usually) no acks on commands, so also queue an update to the
@@ -242,7 +261,6 @@ class AcDevice(Device):
         'work_mode': 't_work_mode',
         'power': 't_power',
         'swing_mode': 't_fan_power',
-        'swing_horizontal_mode': 't_fan_leftright',
         'temp': 't_temp'
     }
     self.work_modes = ['off', 'fan_only', 'heat', 'cool', 'dry', 'auto']
@@ -547,10 +565,16 @@ class FglDevice(Device):
         'fan_speed': 'fan_speed',
         'work_mode': 'operation_mode',
         'swing_mode': 'af_vertical_swing',
-        'temp': 'adjust_temperature'
+        'temp': 'adjust_temperature',
+        # 'preset_mode': 'economy_mode',
+        'display_temperature': 'display_temperature'
+        #'outdoor_temperature': 'outdoor_temperature',
+        #'powerfull_mode': "powerful_mode"
     }
     self.work_modes = ['off', 'fan_only', 'heat', 'cool', 'dry', 'auto']
-    self.fan_modes = ['auto', 'quiet', 'low', 'medium', 'high']
+    self.fan_modes = ['auto', 'diffuse', 'low', 'medium', 'high']
+    self.vertical_level = ['1', '2', '3', '4']
+    # self.preset_mode = ['none', 'eco', 'boost']
 
 
 class FglBDevice(Device):
@@ -560,10 +584,11 @@ class FglBDevice(Device):
     self.topics = {
         'fan_speed': 'fan_speed',
         'work_mode': 'operation_mode',
-        'temp': 'adjust_temperature'
+        'temp': 'adjust_temperature',
+        'display_temperature': 'display_temperature'
     }
     self.work_modes = ['off', 'fan_only', 'heat', 'cool', 'dry', 'auto']
-    self.fan_modes = ['auto', 'quiet', 'low', 'medium', 'high']
+    self.fan_modes = ['auto', 'diffuse', 'low', 'medium', 'high']
 
 
 class HumidifierDevice(Device):
