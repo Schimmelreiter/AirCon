@@ -1,4 +1,22 @@
-# HiSense Air Conditioners
+# HiSense Air Conditioners (fork by Schimmelreiter)
+
+> **This is a fork** of [deiger/AirCon](https://github.com/deiger/AirCon), based on the Fujitsu
+> extensions of the (no longer available) sarbuk fork. The maintained branch is
+> [`schimmelreiter`](https://github.com/Schimmelreiter/AirCon/tree/schimmelreiter).
+>
+> Changes compared to deiger/AirCon:
+> * Fujitsu FGLair devices: half-degree temperatures, room and outdoor temperature, economy and
+>   powerful mode, vertical airflow position, fan speed `quiet`
+> * one independent keep-alive loop per device (a device that is offline no longer delays the others)
+> * connection diagnostics: one log line when a device becomes unreachable and one when it is back,
+>   detection of devices that stop fetching commands (`Command backlog`)
+> * diagnostic entities in Home Assistant: `Last contact`, `Last change`, `Problem` / `Error code`
+>   and every additional data point the device reports (most of them disabled by default)
+> * data points the add-on does not handle are collected in `/config/hisense/diagnose/`
+>   instead of being logged as errors
+>
+> **Home Assistant add-on:** add `https://github.com/Schimmelreiter/AirCon#schimmelreiter` as an
+> add-on repository (Settings → Add-ons → Add-on store → ⋮ → Repositories).
 
 This program implements the Ayla Networks LAN API to interact with HiSense WiFi Air Conditioner module, models AEH-W4B1 and AEH-W4E1, as well as Fujitsu FGLair.
 
@@ -44,7 +62,7 @@ If using [HomeAssistant], this is the preferred method.
 
 1. In the HomeAssistant UI, enter **Supervisor → Add-on Store**.
 1. Click **⋮ menu → Repositories**.
-1. Add `https://github.com/deiger/AirCon` to the list.
+1. Add `https://github.com/Schimmelreiter/AirCon#schimmelreiter` to the list.
 1. Choose **HiSense Air Conditioner** and install it.
 1. Update the configuration as detailed within the add-on.
 1. Start the add-on. Do not forget to enable **Start on boot** and **Watchdog**.
