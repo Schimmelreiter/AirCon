@@ -1,4 +1,22 @@
-# Changelog
+# Changelog (fork Schimmelreiter)
+
+## 0.3.35
+- Diagnostic entities via MQTT discovery: Last contact, Last change, Problem, Command backlog,
+  Error code and all further data points with real values (most disabled by default)
+
+## 0.3.34
+- Fan speed 0 is called `quiet` instead of `diffuse`
+
+## 0.3.33
+- Independent keep-alive loop per device, detection of devices that stop fetching commands
+
+## 0.3.32
+- Merge of sarbuk 0.3.31 (Fujitsu extensions) and deiger 0.3.18 (MQTT reconnect)
+- Connection diagnostics, unknown data points collected instead of logged as errors
+- Add-on is built locally from this fork
+
+# Changelog (deiger/AirCon)
+
 
 ## 0.3.18 (2026-09-07)
 

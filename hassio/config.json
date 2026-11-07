@@ -1,6 +1,6 @@
 {
   "name": "HiSense Air Conditioners (Schimmelreiter)",
-  "version": "0.3.34",
+  "version": "0.3.35",
   "slug": "hisense_ac",
   "description": "Fork von deiger/AirCon mit den Fujitsu-Erweiterungen von sarbuk und Verbindungsdiagnose.",
   "url": "https://github.com/Schimmelreiter/AirCon",
