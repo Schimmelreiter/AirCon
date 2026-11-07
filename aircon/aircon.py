@@ -12,6 +12,7 @@ from typing import Any, Callable, Dict, List
 import queue
 from Crypto.Cipher import AES
 
+from .diagnose import DIAGNOSE
 from . import control_value
 from .config import Config, Encryption
 from .error import Error
@@ -142,6 +143,7 @@ class Device(object):
       logging.debug(f"Updating {self}.{name} to {value}")
       if value != old_value:
         setattr(self._properties, name, value)
+        DIAGNOSE.aenderung(self)
         # logging.debug('Updated properties: %s' % self._properties)
         if name == 't_control_value':
           self._update_controlled_properties(value)

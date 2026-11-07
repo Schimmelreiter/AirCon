@@ -32,6 +32,8 @@ from .aircon import Device
 from .discovery import perform_discovery
 from .mqtt_client import MqttClient
 from .notifier import Notifier
+from .diagnose import DIAGNOSE
+from .mqtt_diagnose import MqttDiagnose
 from .query_handlers import QueryHandlers
 
 
@@ -359,6 +361,10 @@ async def run(parsed_args):
             retain=True
         )
       device.add_property_change_listener(mqtt_client.mqtt_publish_update)
+    # Diagnose-Entitaeten (Last contact, Last change, Problem, Command backlog, weitere Datenpunkte)
+    DIAGNOSE.ausgabe = MqttDiagnose(mqtt_client, mqtt_topics, parsed_args.mqtt_discovery_prefix)
+    for device in devices:
+      DIAGNOSE.ausgabe.anlage_anlegen(device)
 
   async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(connect=5.0)) as session:
     await asyncio.gather(mqtt_loop(mqtt_client), setup_and_run_http_server(parsed_args, devices),

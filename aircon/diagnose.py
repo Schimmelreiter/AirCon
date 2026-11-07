@@ -65,6 +65,15 @@ class Diagnose:
     self._anlagen = {}
     self._lock = threading.Lock()
     self._geschrieben = {}
+    self.ausgabe = None  # optional: MqttDiagnose fuer Entitaeten in Home Assistant
+
+  def _aus(self, methode: str, *args) -> None:
+    if self.ausgabe is None:
+      return
+    try:
+      getattr(self.ausgabe, methode)(*args)
+    except Exception as ex:
+      logging.debug('Diagnose-Entitaet nicht aktualisiert (%s): %r', methode, ex)
 
   def _anlage(self, device) -> _Anlage:
     a = self._anlagen.get(device.ip_address)
@@ -85,6 +94,7 @@ class Diagnose:
         }
         logging.info('Unbekannter Datenpunkt bei %s: %s = %r', a.name, name, wert)
         self._schreiben(a, 'unbekannt', sofort=True)
+        self._aus('datenpunkt', device, name, wert)
         return
       e['zuletzt'] = _zeit(jetzt)
       e['anzahl'] += 1
@@ -95,8 +105,14 @@ class Diagnose:
                                                 ])[-_MAX_AENDERUNGEN:]
         e['letzter_wert'] = wert
         self._schreiben(a, 'unbekannt', sofort=True)
+        self._aus('datenpunkt', device, name, wert)
+        self._aus('aenderung', device)
       else:
         self._schreiben(a, 'unbekannt')
+
+  def aenderung(self, device) -> None:
+    """Ein bekannter Wert der Anlage hat sich geaendert."""
+    self._aus('aenderung', device)
 
   # ---------------------------------------------------------------- Verbindung
   def kontakt(self, device, art: str) -> None:
@@ -105,6 +121,7 @@ class Diagnose:
     with self._lock:
       a = self._anlage(device)
       a.letzter_kontakt, a.letzter_kontakt_art = jetzt, art
+      self._aus('kontakt', device)
       if art == 'commands' and a.wartet_seit:
         a.wartet_seit = jetzt  # Fortschritt: die Anlage holt ab
       if art == 'key_exchange':
@@ -169,6 +186,7 @@ class Diagnose:
                           (jetzt - a.haenger_gemeldet) / 60)
           a.haenger_gemeldet = False
           self._schreiben(a, 'status', sofort=True)
+          self._aus('haenger', device, False)
         a.wartet_seit = None
         return
       if a.wartet_seit is None:
@@ -182,6 +200,7 @@ class Diagnose:
         a.haenger_gemeldet = jetzt
         a.haenger += 1
         self._schreiben(a, 'status', sofort=True)
+        self._aus('haenger', device, True)
 
   # ---------------------------------------------------------------- Dateien
   def _status(self, a: _Anlage) -> dict:
