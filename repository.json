@@ -1,5 +1,5 @@
 {
-  "name": "Home Assistant Add-on: HiSense Air Conditioners",
-  "url": "https://github.com/deiger/AirCon",
-  "maintainer": "Dror Eiger <droreiger@gmail.com>"
+  "name": "HiSense AC (Schimmelreiter)",
+  "url": "https://github.com/Schimmelreiter/AirCon",
+  "maintainer": "Schimmelreiter"
 }

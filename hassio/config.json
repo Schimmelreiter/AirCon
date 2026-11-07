@@ -1,17 +1,28 @@
 {
-  "name": "HiSense Air Conditioners",
-  "version": "0.3.18",
+  "name": "HiSense Air Conditioners (Schimmelreiter)",
+  "version": "0.3.32",
   "slug": "hisense_ac",
-  "description": "Interface for controlling Air Conditioners, e.g. with HiSense modules.",
-  "url": "https://github.com/deiger/AirCon",
-  "image": "deiger/aircon",
-  "arch": ["armhf", "armv7", "aarch64", "amd64", "i386"],
+  "description": "Fork von deiger/AirCon mit den Fujitsu-Erweiterungen von sarbuk und Verbindungsdiagnose.",
+  "url": "https://github.com/Schimmelreiter/AirCon",
+  "arch": [
+    "armhf",
+    "armv7",
+    "aarch64",
+    "amd64",
+    "i386"
+  ],
   "startup": "application",
   "boot": "auto",
   "host_network": true,
-  "map": ["config:rw"],
-  "discovery": ["mqtt"],
-  "services": ["mqtt:want"],
+  "map": [
+    "config:rw"
+  ],
+  "discovery": [
+    "mqtt"
+  ],
+  "services": [
+    "mqtt:want"
+  ],
   "environment": {
     "CONFIG_DIR": "/config/hisense",
     "OPTIONS_FILE": "/data/options.json"
@@ -38,6 +49,7 @@
     "mqtt_user": "str?",
     "mqtt_pass": "str?",
     "port": "port",
-    "local_ip": "str?"
+    "local_ip": "str?",
+    "temp_type": "str?"
   }
 }
