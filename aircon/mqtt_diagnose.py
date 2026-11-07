@@ -102,6 +102,7 @@ class MqttDiagnose:
         'device': self._geraet(device),
     }
     config.update(extra)
+    config = {k: v for k, v in config.items() if v is not None or k == 'name'}
     self._client.publish(f'{self._praefix}/{plattform}/{device.mac_address}/{name}/config',
                          payload=json.dumps(config), retain=True)
     self._angelegt.add(schluessel)
@@ -131,6 +132,18 @@ class MqttDiagnose:
                     {'name': 'Command backlog', 'device_class': 'problem', 'payload_on': 'ON',
                      'payload_off': 'OFF', 'icon': 'mdi:tray-full'})
       self._senden(device, 'command_backlog', 'OFF')
+      # Innentemperatur als eigener Sensor (bisher nur Attribut der Klima-Entitaet)
+      quelle = device.topics.get('display_temperature') or device.topics.get('env_temp')
+      if quelle:
+        self._anlegen(device, 'sensor', 'indoor_temperature', {
+            'name': 'Indoor temperature',
+            'state_topic': self._state_topic(device, quelle),
+            'entity_category': None,
+            'device_class': 'temperature',
+            'state_class': 'measurement',
+            'unit_of_measurement': '°F' if device.is_fahrenheit else '°C',
+            'suggested_display_precision': 1,
+        })
 
   def kontakt(self, device) -> None:
     with self._lock:

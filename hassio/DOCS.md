@@ -1,3 +1,5 @@
+**Fork by Schimmelreiter** of [deiger/AirCon](https://github.com/deiger/AirCon) – thanks to deiger and sarbuk. Fork details: [Schimmelreiter/AirCon (branch schimmelreiter)](https://github.com/Schimmelreiter/AirCon/tree/schimmelreiter). The original documentation follows unchanged.
+
 # Home Assistant Add-on: HiSense Air Conditioners
 
 ## Prerequisites
@@ -13,7 +15,7 @@
 # Configuration
 
 1. Find your application code from the list
-   [here](https://github.com/Schimmelreiter/AirCon/tree/schimmelreiter#prerequisites).
+   [here](https://github.com/deiger/AirCon#prerequisites).
 1. Set the configuration as follows:
    ```yaml
    app:

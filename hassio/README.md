@@ -4,7 +4,9 @@
 
 ## About
 
-Use this add-on to add support for Hisense Air Conditioners. This is the fork by Schimmelreiter, see [here](https://github.com/Schimmelreiter/AirCon/tree/schimmelreiter) for details and the differences to [deiger/AirCon](https://github.com/deiger/AirCon).
+**Fork by Schimmelreiter** of [deiger/AirCon](https://github.com/deiger/AirCon) – many thanks to deiger for AirCon and to sarbuk for the Fujitsu extensions. Details and changes: [Schimmelreiter/AirCon (branch schimmelreiter)](https://github.com/Schimmelreiter/AirCon/tree/schimmelreiter).
+
+Use this add-on to add support for Hisense Air Conditioners. See [here](https://github.com/deiger/AirCon) for more details.
 
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg

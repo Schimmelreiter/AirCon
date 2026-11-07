@@ -1,5 +1,9 @@
 # Changelog (fork Schimmelreiter)
 
+## 0.3.36
+- Indoor temperature as separate sensor
+- READMEs: original texts of deiger restored, with fork notice and thanks to deiger and sarbuk
+
 ## 0.3.35
 - Diagnostic entities via MQTT discovery: Last contact, Last change, Problem, Command backlog,
   Error code and all further data points with real values (most disabled by default)
