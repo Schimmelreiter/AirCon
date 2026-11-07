@@ -17,6 +17,7 @@ import time
 
 _MAX_AENDERUNGEN = 20
 _SCHREIB_ABSTAND = 30.0  # Sekunden zwischen zwei Schreibvorgaengen je Datei
+_HAENGER_NACH = 60.0  # Befehle so lange nicht abgeholt -> stiller Haenger
 
 
 def _zeit(t):
@@ -50,6 +51,10 @@ class _Anlage:
     self.schluesseltausch = 0
     self.letzter_schluesseltausch = None
     self.erholt_um = None
+    self.wartet_seit = None  # Befehle stehen an, seit dann kein Abholen mehr
+    self.wartend = 0
+    self.haenger_gemeldet = False
+    self.haenger = 0
 
 
 class Diagnose:
@@ -100,6 +105,8 @@ class Diagnose:
     with self._lock:
       a = self._anlage(device)
       a.letzter_kontakt, a.letzter_kontakt_art = jetzt, art
+      if art == 'commands' and a.wartet_seit:
+        a.wartet_seit = jetzt  # Fortschritt: die Anlage holt ab
       if art == 'key_exchange':
         a.schluesseltausch += 1
         a.letzter_schluesseltausch = jetzt
@@ -150,6 +157,32 @@ class Diagnose:
                       a.fehlversuche, art)
         self._schreiben(a, 'status')
 
+  def warteschlange(self, device, anzahl: int) -> None:
+    """Erkennt stille Haenger: Befehle stehen an, die Anlage holt sie aber nicht ab."""
+    jetzt = time.time()
+    with self._lock:
+      a = self._anlage(device)
+      a.wartend = anzahl
+      if anzahl <= 0:
+        if a.haenger_gemeldet:
+          logging.warning('%s (%s) holt Befehle wieder ab (Haenger %.1f min)', a.name, a.ip,
+                          (jetzt - a.haenger_gemeldet) / 60)
+          a.haenger_gemeldet = False
+          self._schreiben(a, 'status', sofort=True)
+        a.wartet_seit = None
+        return
+      if a.wartet_seit is None:
+        a.wartet_seit = jetzt
+      elif not a.haenger_gemeldet and jetzt - a.wartet_seit > _HAENGER_NACH:
+        kontakt = f'{jetzt - a.letzter_kontakt:.0f} s' if a.letzter_kontakt else 'nie'
+        ok = f'{jetzt - a.letztes_keepalive_ok:.0f} s' if a.letztes_keepalive_ok else 'nie'
+        logging.warning('%s (%s) holt seit %.0f s keine Befehle ab, %d warten | letzte Anfrage '
+                        'der Anlage vor %s (%s), letztes erfolgreiches Keep-Alive vor %s', a.name,
+                        a.ip, jetzt - a.wartet_seit, anzahl, kontakt, a.letzter_kontakt_art, ok)
+        a.haenger_gemeldet = jetzt
+        a.haenger += 1
+        self._schreiben(a, 'status', sofort=True)
+
   # ---------------------------------------------------------------- Dateien
   def _status(self, a: _Anlage) -> dict:
     return {
@@ -159,7 +192,9 @@ class Diagnose:
         'ausfall_seit': _zeit(a.ausfall_seit), 'fehlversuche': a.fehlversuche,
         'fehlerarten': a.fehlerarten, 'letzter_fehler': a.letzter_fehler,
         'ausfaelle_seit_start': a.ausfaelle, 'schluesseltausch_seit_start': a.schluesseltausch,
-        'letzter_schluesseltausch': _zeit(a.letzter_schluesseltausch)
+        'letzter_schluesseltausch': _zeit(a.letzter_schluesseltausch),
+        'befehle_wartend': a.wartend, 'wartet_seit': _zeit(a.wartet_seit),
+        'haenger_seit': _zeit(a.haenger_gemeldet or None), 'haenger_seit_start': a.haenger
     }
 
   def _schreiben(self, a: _Anlage, art: str, sofort: bool = False) -> None:

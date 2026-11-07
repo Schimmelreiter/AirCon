@@ -77,20 +77,35 @@ class Notifier:
     asyncio.run_coroutine_threadsafe(self._notify(), loop)
 
   async def start(self, session: aiohttp.ClientSession):
+    """Startet je Anlage eine eigene Keep-Alive-Schleife.
+
+    Frueher liefen die Keep-Alives aller Anlagen in einer gemeinsamen Runde (gather): hing eine
+    Anlage in ihren Wiederholungen (bis ca. 1 min), bekamen die anderen in der Zeit weder
+    Keep-Alive noch Befehls-Benachrichtigung - sie mussten neu verschluesseln bzw. holten
+    Befehle verspaetet ab. Jetzt bremst eine ausgefallene Anlage die anderen nicht mehr.
+    """
     self._running = True
-    async with self._condition:
-      while self._running:
-        queue_sizes = await asyncio.gather(*(self._perform_request(session=session, config=config)
-                                             for config in self._configurations))
-        if max(queue_sizes) <= 1:
-          logging.debug('[KeepAlive] Waiting for notification or timeout')
+    await asyncio.gather(*(self._device_loop(session, config) for config in self._configurations))
+
+  async def _device_loop(self, session: aiohttp.ClientSession, config: _NotifyConfiguration):
+    while self._running:
+      try:
+        queue_size = await self._perform_request(session=session, config=config)
+      except Exception:
+        logging.exception('[KeepAlive] Unerwarteter Fehler fuer %s', config.device.ip_address)
+        queue_size = 0
+        await asyncio.sleep(self._KEEP_ALIVE_INTERVAL)
+      DIAGNOSE.warteschlange(config.device, config.device.commands_queue.qsize())
+      if queue_size <= 1:
+        logging.debug('[KeepAlive] %s: Waiting for notification or timeout', config.device.ip_address)
+        async with self._condition:
           try:
             await asyncio.wait_for(self._condition.wait(), timeout=self._KEEP_ALIVE_INTERVAL)
           except TimeoutError:
             pass
-        else:
-          # give some time to clean up the queues
-          await asyncio.sleep(self._TIME_TO_HANDLE_REQUESTS)
+      else:
+        # give some time to clean up the queues
+        await asyncio.sleep(self._TIME_TO_HANDLE_REQUESTS)
 
   async def stop(self):
     self._running = False
