@@ -1,5 +1,9 @@
 # Changelog (fork Schimmelreiter)
 
+## 0.3.37
+- Device states are published retained: available immediately after a Home Assistant restart
+- Entity names without the device serial (Economy mode, Powerful mode, Vertical airflow, Outdoor temperature)
+
 ## 0.3.36
 - Indoor temperature as separate sensor
 - READMEs: original texts of deiger restored, with fork notice and thanks to deiger and sarbuk

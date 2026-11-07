@@ -95,6 +95,8 @@ class MqttClient(mqtt.Client):
       payload = 'fan_only' if value is AcWorkMode.FAN else value.name.lower()
     else:
       payload = str(value)
+    # Immer 'retained': nach einem Neustart von Home Assistant liegen die Zustaende sofort vor,
+    # statt bis zur naechsten Abfrage (alle 10 min) 'unknown' zu sein.
     self.publish(self._mqtt_topics['pub'].format(mac_address, property_name),
                  payload=payload.encode('utf-8'),
-                 retain=retain)
+                 retain=True)

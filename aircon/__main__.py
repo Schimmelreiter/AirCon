@@ -301,7 +301,7 @@ async def run(parsed_args):
         mqtt_client.publish(
             f"{parsed_args.mqtt_discovery_prefix}/switch/{device.mac_address}/economy_mode/config",
             payload=json.dumps({
-                "name": f"{device.name} Economy Mode",
+                "name": "Economy mode",
                 "unique_id": f"{device.mac_address}_economy_mode",
                 "state_topic": mqtt_topics['pub'].format(device.mac_address, topics['economy_mode']),
                 "command_topic": mqtt_topics['sub'].format(device.mac_address, topics['economy_mode']),
@@ -317,7 +317,7 @@ async def run(parsed_args):
         mqtt_client.publish(
             f"{parsed_args.mqtt_discovery_prefix}/switch/{device.mac_address}/powerful_mode/config",
             payload=json.dumps({
-                "name": f"{device.name} Powerful Mode",
+                "name": "Powerful mode",
                 "unique_id": f"{device.mac_address}_powerful_mode",
                 "state_topic": mqtt_topics['pub'].format(device.mac_address, topics['powerful_mode']),
                 "command_topic": mqtt_topics['sub'].format(device.mac_address, topics['powerful_mode']),
@@ -333,7 +333,7 @@ async def run(parsed_args):
         mqtt_client.publish(
             f"{parsed_args.mqtt_discovery_prefix}/number/{device.mac_address}/af_vertical_direction/config",
             payload=json.dumps({
-                "name": f"{device.name} Vertical Airflow",
+                "name": "Vertical airflow",
                 "unique_id": f"{device.mac_address}_af_vertical_direction",
                 "state_topic": mqtt_topics['pub'].format(device.mac_address, topics['af_vertical_direction']),
                 "command_topic": mqtt_topics['sub'].format(device.mac_address, topics['af_vertical_direction']),
@@ -350,7 +350,7 @@ async def run(parsed_args):
         mqtt_client.publish(
             f"{parsed_args.mqtt_discovery_prefix}/sensor/{device.mac_address}/outdoor_temperature/config",
             payload=json.dumps({
-                "name": f"{device.name} Outdoor Temperature",
+                "name": "Outdoor temperature",
                 "unique_id": f"{device.mac_address}_outdoor_temperature",
                 "state_topic": mqtt_topics['pub'].format(device.mac_address, topics['outdoor_temperature']),
                 "unit_of_measurement": "°C",
