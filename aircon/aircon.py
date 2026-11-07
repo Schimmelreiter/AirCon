@@ -576,7 +576,7 @@ class FglDevice(Device):
         #'powerfull_mode': "powerful_mode"
     }
     self.work_modes = ['off', 'fan_only', 'heat', 'cool', 'dry', 'auto']
-    self.fan_modes = ['auto', 'diffuse', 'low', 'medium', 'high']
+    self.fan_modes = ['auto', 'quiet', 'low', 'medium', 'high']
     self.vertical_level = ['1', '2', '3', '4']
     # self.preset_mode = ['none', 'eco', 'boost']
 
@@ -592,7 +592,7 @@ class FglBDevice(Device):
         'display_temperature': 'display_temperature'
     }
     self.work_modes = ['off', 'fan_only', 'heat', 'cool', 'dry', 'auto']
-    self.fan_modes = ['auto', 'diffuse', 'low', 'medium', 'high']
+    self.fan_modes = ['auto', 'quiet', 'low', 'medium', 'high']
 
 
 class HumidifierDevice(Device):

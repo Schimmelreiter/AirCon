@@ -133,7 +133,7 @@ class FglOperationMode(enum.IntEnum):
 
 
 class FglFanSpeed(enum.IntEnum):
-  DIFFUSE = 0
+  QUIET = 0
   LOW = 1
   MEDIUM = 2
   HIGH = 3
