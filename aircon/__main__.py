@@ -158,9 +158,31 @@ async def setup_and_run_http_server(parsed_args, devices: [Device]):
 
 
 async def mqtt_loop(mqtt_client: MqttClient):
+  """Drives the paho network loop and reconnects when the broker connection is lost.
+
+  paho's manual loop() never reconnects on its own, so after a broker restart or a short LAN
+  outage the bridge used to stay silent forever (LWT 'offline', entities 'unavailable' in Home
+  Assistant) until the container was restarted.
+  """
   _MQTT_LOOP_TIMEOUT = 1
+  _MQTT_RECONNECT_DELAY = 5
+  if mqtt_client is None:
+    return
   while True:
-    mqtt_client.loop()
+    try:
+      rc = mqtt_client.loop()
+    except Exception:
+      logging.exception('MQTT loop failed')
+      rc = mqtt.MQTT_ERR_UNKNOWN
+    if rc != mqtt.MQTT_ERR_SUCCESS:
+      logging.warning('MQTT loop returned %s, reconnecting in %ss', mqtt.error_string(rc),
+                      _MQTT_RECONNECT_DELAY)
+      await asyncio.sleep(_MQTT_RECONNECT_DELAY)
+      try:
+        mqtt_client.reconnect()
+      except Exception as ex:
+        logging.error('MQTT reconnect failed: %r', ex)
+      continue
     await asyncio.sleep(_MQTT_LOOP_TIMEOUT)
 
 
@@ -192,7 +214,7 @@ async def run(parsed_args):
     mqtt_client.will_set(mqtt_topics['lwt'], payload='offline', retain=True)
     mqtt_client.connect(parsed_args.mqtt_host, parsed_args.mqtt_port)
     mqtt_client.publish(mqtt_topics['lwt'], payload='online', retain=True)
-    print(f"[DEBUG] Devices loaded: {len(devices)}", file=sys.stderr)
+    logging.debug("Devices loaded: %d", len(devices))
     for device in devices:
       config = {
           'unique_id': device.mac_address,
@@ -226,7 +248,7 @@ async def run(parsed_args):
       for key in fallback_keys:
           if key not in topics:
               topics[key] = key
-      print(f"[DEBUG] Patched topics for {device.name}: {topics.keys()}", file=sys.stderr)
+      logging.debug("Patched topics for %s: %s", device.name, list(topics.keys()))
       if 'env_temp' in topics:
         config['current_temperature_topic'] = mqtt_topics['pub'].format(
             device.mac_address, topics['env_temp'])
@@ -248,6 +270,12 @@ async def run(parsed_args):
         config['swing_mode_state_topic'] = mqtt_topics['pub'].format(device.mac_address,
                                                                      topics['swing_mode'])
         config['swing_modes'] = ['on', 'off']
+      if 'swing_horizontal_mode' in topics:
+        config['swing_horizontal_mode_command_topic'] = mqtt_topics['sub'].format(
+            device.mac_address, topics['swing_horizontal_mode'])
+        config['swing_horizontal_mode_state_topic'] = mqtt_topics['pub'].format(
+            device.mac_address, topics['swing_horizontal_mode'])
+        config['swing_horizontal_modes'] = ['on', 'off']
       # if 'preset_mode' in topics:
       #   config['preset_mode_command_topic'] = mqtt_topics['sub'].format(
       #       device.mac_address, topics['preset_mode'])
