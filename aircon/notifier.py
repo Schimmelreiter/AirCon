@@ -12,6 +12,7 @@ import time
 import threading
 
 from .aircon import Device
+from .diagnose import DIAGNOSE, fehlertext
 
 if sys.version_info < (3, 8):
   TimeoutError = concurrent.futures.TimeoutError
@@ -114,13 +115,18 @@ class Notifier:
       async with session.request(method, url, json=self._json, headers=config.headers) as resp:
         if resp.status != HTTPStatus.ACCEPTED.value:
           resp_data = await resp.text()
-          logging.error(f'[KeepAlive] Sending local_reg failed: {resp.status}, {resp_data}')
-          raise ConnectionError(f'Sending local_reg failed: {resp.status}, {resp_data}')
+          fehler = ConnectionError(f'Sending local_reg failed: {resp.status}, {resp_data}')
+          DIAGNOSE.keepalive_fehler(config.device, fehler)
+          logging.debug(f'[KeepAlive] Sending local_reg failed: {resp.status}, {resp_data}')
+          raise fehler
     except (aiohttp.client_exceptions.ClientConnectorError,
-            aiohttp.client_exceptions.ClientConnectionError) as e:
-      logging.error(f'Failed to connect to {config.device.ip_address}, maybe it is offline?')
+            aiohttp.client_exceptions.ClientConnectionError, TimeoutError) as e:
+      # Diagnose meldet den Beginn des Ausfalls einmal (mit Fehlerart), Wiederholungen nur debug.
+      DIAGNOSE.keepalive_fehler(config.device, e)
+      logging.debug(f'Failed to connect to {config.device.ip_address}, maybe it is offline? {fehlertext(e)}')
       raise ConnectionError(
           f'Failed to connect to {config.device.ip_address}, maybe it is offline?')
     config.last_timestamp = now
+    DIAGNOSE.keepalive_ok(config.device)
     config.device.available = True
     return queue_size

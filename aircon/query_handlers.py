@@ -14,6 +14,7 @@ from typing import Callable
 from .config import Config, Encryption
 from .aircon import Device
 from .error import Error, KeyIdReplaced
+from .diagnose import DIAGNOSE
 
 
 class QueryHandlers:
@@ -39,7 +40,9 @@ class QueryHandlers:
       if key['ver'] != 1 or key['proto'] != 1 or key.get('sec'):
         logging.error(f'Invalid key exchange: {data}')
         raise web.HTTPBadRequest(reason=f'Invalid key exchange: {data}')
-      updated_keys = self._devices_map[request.remote].update_key(key)
+      device = self._devices_map[request.remote]
+      DIAGNOSE.kontakt(device, 'key_exchange')
+      updated_keys = device.update_key(key)
     except KeyIdReplaced as e:
       logging.error(f'{e.title}\n{e.message}')
       return web.Response(status=HTTPStatus.NOT_FOUND.value, reason=f'{e.title}\n{e.message}')
@@ -52,6 +55,7 @@ class QueryHandlers:
     """
     command = {}
     device = self._devices_map[request.remote]
+    DIAGNOSE.kontakt(device, 'commands')
     command['seq_no'] = device.get_command_seq_no()
     try:
       command_entry = device.commands_queue.get_nowait()
@@ -67,6 +71,7 @@ class QueryHandlers:
     Decrypts, validates, and pushes the value into the local properties store.
     """
     device = self._devices_map[request.remote]
+    DIAGNOSE.kontakt(device, 'datapoint')
     post_data = await request.text()
     data = json.loads(post_data)
     try:
@@ -85,6 +90,10 @@ class QueryHandlers:
       # Fix A/C typos.
       if name == 'f_votage':
         name = 'f_voltage'
+      if not device.has_property(name):
+        # Vom Add-on nicht unterstuetzter Datenpunkt: sammeln statt als Fehler protokollieren.
+        DIAGNOSE.unbekannt(device, name, update['data'].get('value'))
+        return response
       value = device.parse_property(name, update['data']['value'])
       logging.debug(f"Updating {device}.{name} to {value} ({update['data']['value']})")
       device.update_property(name, value)

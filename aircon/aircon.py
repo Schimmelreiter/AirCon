@@ -111,6 +111,9 @@ class Device(object):
     with self._properties_lock:
       return getattr(self._properties, name, None)
 
+  def has_property(self, name: str) -> bool:
+    return name in self._properties.__dataclass_fields__
+
   def get_property_type(self, name: str):
     return self._properties.get_type(name)
 
