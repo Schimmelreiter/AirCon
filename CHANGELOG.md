@@ -1,5 +1,9 @@
 # Changelog (fork Schimmelreiter)
 
+## 0.3.38
+- Economy/Powerful switches: state was always "unknown" in Home Assistant (states are sent as `on`/`off`, discovery expected `ON`/`OFF`) - `state_on`/`state_off` added
+- Much smaller log: every request of the air conditioners (HTTP access log) and every decrypted datapoint are only logged at log level DEBUG
+
 ## 0.3.37
 - Device states are published retained: available immediately after a Home Assistant restart
 - Entity names without the device serial (Economy mode, Powerful mode, Vertical airflow, Outdoor temperature)

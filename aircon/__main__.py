@@ -153,7 +153,10 @@ async def setup_and_run_http_server(parsed_args, devices: [Device]):
       # '/local_lan/regtoken.json': query_handlers.module_request_handler,
       # '/local_lan/wifi_stop_ap.json': query_handlers.module_request_handler
   ])
-  runner = web.AppRunner(app)
+  # Jede Anfrage der Anlagen (alle paar Sekunden je Anlage) nur bei DEBUG protokollieren - sonst waechst
+  # das Log um viele MB pro Tag und Warnungen/Ausfaelle gehen darin unter.
+  debug = logging.getLogger().getEffectiveLevel() <= logging.DEBUG
+  runner = web.AppRunner(app, access_log=web.access_logger if debug else None)
   await runner.setup()
   site = web.TCPSite(runner, port=parsed_args.port)
   await site.start()
@@ -307,6 +310,9 @@ async def run(parsed_args):
                 "command_topic": mqtt_topics['sub'].format(device.mac_address, topics['economy_mode']),
                 "payload_on": "ON",
                 "payload_off": "OFF",
+                # Zustaende kommen als Enum-Name klein ("on"/"off"), Befehle werden gross umgewandelt
+                "state_on": "on",
+                "state_off": "off",
                 "availability": [{"topic": mqtt_topics['lwt']}],
                 "device": config["device"]
             }),
@@ -323,6 +329,9 @@ async def run(parsed_args):
                 "command_topic": mqtt_topics['sub'].format(device.mac_address, topics['powerful_mode']),
                 "payload_on": "ON",
                 "payload_off": "OFF",
+                # Zustaende kommen als Enum-Name klein ("on"/"off"), Befehle werden gross umgewandelt
+                "state_on": "on",
+                "state_off": "off",
                 "availability": [{"topic": mqtt_topics['lwt']}],
                 "device": config["device"]
             }),

@@ -146,7 +146,7 @@ class QueryHandlers:
     sign = base64.b64encode(Encryption.hmac_digest(encryption.sign_key, text)).decode('utf-8')
     if sign != data['sign']:
       raise Error(f'Invalid signature for:\n{text.decode("utf-8")}!')
-    logging.info('Decrypted: %s', text.decode('utf-8'))
+    logging.debug('Decrypted: %s', text.decode('utf-8'))
     try:
       return json.loads(text.decode('utf-8'))
     except Exception as ex:
