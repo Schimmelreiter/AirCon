@@ -1,7 +1,7 @@
 # Baut das Add-on lokal aus dem Zweig "schimmelreiter" dieses Forks (kein fertiges Image).
 # BUILD_VERSION (vom Supervisor = Add-on-Version) erzwingt bei jeder neuen Version einen
 # frischen Download des Codes statt eines alten Docker-Zwischenstands.
-FROM python:3.10
+FROM python:3.10-slim
 
 ARG BUILD_VERSION=latest
 ARG AIRCON_REF=schimmelreiter
