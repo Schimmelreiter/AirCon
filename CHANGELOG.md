@@ -1,5 +1,8 @@
 # Changelog (fork Schimmelreiter)
 
+## 0.3.39
+- Problem binary sensor without own name: Home Assistant shows the translated device class name ("Problem") instead of the device name
+
 ## 0.3.38
 - Economy/Powerful switches: state was always "unknown" in Home Assistant (states are sent as `on`/`off`, discovery expected `ON`/`OFF`) - `state_on`/`state_off` added
 - Much smaller log: every request of the air conditioners (HTTP access log) and every decrypted datapoint are only logged at log level DEBUG

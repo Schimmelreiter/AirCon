@@ -3,7 +3,8 @@
 Je Anlage:
   * Last contact   - Zeitstempel der letzten Anfrage der Anlage an das Add-on (hoechstens 1x/min)
   * Last change    - Zeitstempel der letzten Wertaenderung der Anlage
-  * Problem        - an, wenn error_code ungleich 0 ist (device_class problem, Name von HA uebersetzt)
+  * Problem        - an, wenn error_code ungleich 0 ist (device_class problem, ohne eigenen Namen ->
+                     Name der Geraeteklasse, von HA uebersetzt)
   * Command backlog- an, wenn die Anlage anstehende Befehle nicht abholt (stiller Haenger)
   * je Datenpunkt, den das Add-on sonst nicht auswertet und der einen echten Wert hat (nicht
     65535), ein Diagnose-Sensor. Nur die nuetzlichen sind von Anfang an aktiv, die uebrigen
@@ -126,8 +127,9 @@ class MqttDiagnose:
       self._anlegen(device, 'sensor', 'last_change',
                     {'name': 'Last change', 'device_class': 'timestamp'})
       self._anlegen(device, 'binary_sensor', 'problem',
-                    {'name': None, 'device_class': 'problem', 'payload_on': 'ON',
-                     'payload_off': 'OFF'})
+                    # kein 'name': HA nimmt den uebersetzten Namen der Geraeteklasse ("Problem");
+                    # 'name': None hiesse "Entitaet ist das Geraet" und zeigte den Geraetenamen
+                    {'device_class': 'problem', 'payload_on': 'ON', 'payload_off': 'OFF'})
       self._anlegen(device, 'binary_sensor', 'command_backlog',
                     {'name': 'Command backlog', 'device_class': 'problem', 'payload_on': 'ON',
                      'payload_off': 'OFF', 'icon': 'mdi:tray-full'})
