@@ -125,8 +125,14 @@ class Device(object):
   def parse_property(self, name: str, value):
     return self._properties.parse_attr(name, value)
 
+  # 65535 = "kein Wert" (z.B. Solltemperatur im Modus Luefter): letzten gueltigen Wert behalten
+  KEIN_WERT_BEHALTEN = ('adjust_temperature',)
+
   def update_property(self, name: str, value, notify_value=None) -> None:
     """Update the stored properties, if changed."""
+    if name in self.KEIN_WERT_BEHALTEN and value == 65535:
+      logging.debug(f"{self}.{name}: 65535 (kein Wert) - letzter Wert bleibt")
+      return
     # Update value precision for value sent from the A/C
     data_type = self._properties.get_type(name)
     if data_type is int:

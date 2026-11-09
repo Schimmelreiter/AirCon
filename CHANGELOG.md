@@ -1,5 +1,8 @@
 # Changelog (fork Schimmelreiter)
 
+## 0.3.40
+- Target temperature 65535 ("no value", sent by Fujitsu units in fan-only mode) is ignored: the last valid target temperature is kept instead of showing 6553.5 °C
+
 ## 0.3.39
 - Problem binary sensor without own name: Home Assistant shows the translated device class name ("Problem") instead of the device name
 
